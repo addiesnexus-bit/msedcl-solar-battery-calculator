@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar + Battery Calculator – HT Industrial (MSEDCL)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{--ink:#1c2833;--mut:#5d6b76;--bg:#eceff1;--card:#fff;--line:#d5dbe0;--sun:#b9770e;--sunbg:#fdf3e1;--bat:#0e6655;--batbg:#e3f3ef;--bad:#a93226}
+@media (prefers-color-scheme:dark){:root:not([data-print]){--ink:#e6ebef;--mut:#9aa8b3;--bg:#12181d;--card:#1b242b;--line:#2f3b45;--sun:#e0a23a;--sunbg:#2c2515;--bat:#4cc3a8;--batbg:#14302a;--bad:#ec7063}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Barlow,system-ui,sans-serif}
+header{padding:18px 24px;border-bottom:3px solid var(--sun);background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font:700 24px 'Barlow Semi Condensed',Barlow,sans-serif;margin:0}
+h2{font:600 17px 'Barlow Semi Condensed',Barlow,sans-serif;margin:0 0 10px}
+header p{margin:2px 0 0;color:var(--mut);font-size:13px}
+button{font:600 14px Barlow,sans-serif;background:var(--ink);color:var(--card);border:0;padding:10px 18px;border-radius:4px;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--sun);outline-offset:1px}
+main{display:grid;grid-template-columns:340px 1fr;gap:18px;padding:18px 24px;max-width:1500px;margin:auto}
+.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px}
+.panel{align-self:start}
+fieldset{border:0;border-top:1px solid var(--line);margin:0 0 6px;padding:10px 0 0}
+legend{font:600 13px Barlow;color:var(--mut);padding:0 6px 0 0}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:5px 0;font-size:13.5px}
+input,select{width:120px;padding:5px 7px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink);font:14px Barlow}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+td:last-child{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.full h2{color:var(--sun)} .smart h2{color:var(--bat)}
+.full{border-top:4px solid var(--sun)} .smart{border-top:4px solid var(--bat)}
+.hl td{background:var(--sunbg)} .smart .hl td{background:var(--batbg)}
+pre{margin:0;overflow-x:auto;font:13px/1.6 ui-monospace,Menlo,Consolas,monospace}
+.rec{border-left:5px solid var(--bat);background:var(--batbg)}
+.rec.f{border-color:var(--sun);background:var(--sunbg)}
+.rec p{margin:6px 0}
+.warn{color:var(--bad);font-size:13px;margin:4px 0}
+.small{font-size:12.5px;color:var(--mut)}
+.stack{display:grid;gap:16px}
+@media(max-width:1000px){main{grid-template-columns:1fr;padding:12px}.two{grid-template-columns:1fr}}
+@media print{
+ body{background:#fff;color:#000} header button,.panel{display:none}
+ main{display:block;padding:0}.card{break-inside:avoid;margin-bottom:12px}
+ .two{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<header>
+ <div>
+  <h1>Solar + Battery Calculator</h1>
+  <p>HT Industrial Consumer · Maharashtra (MSEDCL) · Nagpur generation 4.2 units/kW/day</p>
+ </div>
+ <button id="pdf" type="button">Download as PDF</button>
+</header>
+
+<main>
+<section class="panel" aria-label="Inputs">
+ <h2>Input bharo</h2>
+ <fieldset><legend>Connection</legend>
+  <label>Sanctioned Load (kW)<input id="sl" type="number" value="1000"></label>
+  <label>Contract Demand (kVA)<input id="cd" type="number" value="800"></label>
+  <label>Billing Days<input id="days" type="number" value="31"></label>
+ </fieldset>
+ <fieldset><legend>Monthly units (kWh / kVAh)</legend>
+  <label>Total Monthly Units<input id="units" type="number" value="412672"></label>
+  <label>Zone A (00–06)<input id="zA" type="number" value="86025"></label>
+  <label>Zone B (06–09)<input id="zB" type="number" value="37200"></label>
+  <label>Zone C (09–17)<input id="zC" type="number" value="186000"></label>
+  <label>Zone D (17–24)<input id="zD" type="number" value="103447"></label>
+  <div id="zwarn" class="warn"></div>
+ </fieldset>
+ <fieldset><legend>Existing system &amp; bill</legend>
+  <label>Existing Solar (kW)<input id="ex" type="number" value="500"></label>
+  <label>Monthly Bill (Rs.)<input id="bill" type="number" value="4000000"></label>
+ </fieldset>
+ <fieldset><legend>Rates (ex-GST)</legend>
+  <label>Solar Rs./kW<input id="rs" type="number" value="40000"></label>
+  <label>Battery Rs./MWh<input id="rb" type="number" value="14000000"></label>
+  <label>PCS Rs./kW<input id="rp" type="number" value="6000"></label>
+  <label>Civil / EMS %<input id="civ" type="number" value="12"></label>
+ </fieldset>
+ <fieldset><legend>Battery pack</legend>
+  <label>Pack Volt (V)<input id="pv" type="number" value="480"></label>
+  <label>Pack Ah<input id="pa" type="number" value="100"></label>
+  <label>Chemistry<select id="chem"><option value="0.9">LiFePO4 (90%)</option><option value="0.5">Lead Acid (50%)</option></select></label>
+  <label>Pack count me DoD lagao<select id="dod"><option value="0">Nahi</option><option value="1">Haan</option></select></label>
+ </fieldset>
+ <fieldset><legend>Assumptions (edit kar sakte ho)</legend>
+  <label>New Bill – Full Backup % of current<input id="p1" type="number" value="15"></label>
+  <label>New Bill – Smart Saving % of current<input id="p2" type="number" value="32"></label>
+  <label>PCS peak factor<input id="pk" type="number" step="0.05" value="1.25"></label>
+  <label>Battery replacement cost (Yr 12) % of today's<input id="rep" type="number" value="60"></label>
+  <label>MWh per container<input id="mpc" type="number" step="0.1" value="3"></label>
+  <label>Sq.Ft per container<input id="spc" type="number" value="350"></label>
+ </fieldset>
+ <fieldset><legend>Demand capping (optional)</legend>
+  <label>Old Billed Demand (kVA)<input id="od" type="number" value="800"></label>
+  <label>New Capped Demand (kVA)<input id="nd" type="number" value="550"></label>
+  <label>Demand Charge Rs./kVA<input id="dc" type="number" value="650"></label>
+  <label>Saving me jodo<select id="dcOn"><option value="0">Nahi</option><option value="1">Haan</option></select></label>
+ </fieldset>
+</section>
+
+<section class="stack" id="out" aria-live="polite"></section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0;
+const inr=x=>{const a=Math.abs(x),s=x<0?'-':'';
+ return 'Rs. '+s+(a>=1e7?(a/1e7).toFixed(2)+' Cr':a>=1e5?(a/1e5).toFixed(2)+' Lakh':Math.round(a).toLocaleString('en-IN'))};
+const num=(x,d=0)=>x.toLocaleString('en-IN',{maximumFractionDigits:d});
+const rows=a=>a.map(r=>`<tr class="${r[2]||''}"><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+
+function calc(){
+ const days=n('days')||1, tot=n('units');
+ const d={A:n('zA')/days,B:n('zB')/days,C:n('zC')/days,D:n('zD')/days};
+ const zsum=n('zA')+n('zB')+n('zC')+n('zD');
+ $('zwarn').textContent = tot&&Math.abs(zsum-tot)/tot>0.02 ? `Zone total (${num(zsum)}) aur Total Units (${num(tot)}) match nahi kar rahe – check karo.` : '';
+ const daily=tot/days, nonSolar=d.A+d.B+d.D;
+ const ex=n('ex'), reqSolar=daily*1.15/4.2, add=Math.max(0,reqSolar-ex), totSolar=ex+add;
+ const area=add*80, gen=totSolar*4.2;
+ const packKwh=n('pv')*n('pa')/1000, dodF=$('dod').value==='1'?parseFloat($('chem').value):1;
+ const civ=1+n('civ')/100, bill=n('bill');
+ const dcSave=$('dcOn').value==='1'?Math.max(0,n('od')-n('nd'))*n('dc'):0;
+
+ const mk=(reqKwh,pcs,pct)=>{
+  const kwh=reqKwh/dodF, mwh=kwh/1000;
+  const batCost=mwh*n('rb');
+  const inv=(add*n('rs')+batCost+pcs*n('rp'))*civ;
+  const newBill=Math.max(0,bill*pct/100-dcSave);
+  const mSave=bill-newBill, ySave=mSave*12;
+  const repl=batCost*n('rep')/100;
+  const cont=Math.ceil(mwh/(n('mpc')||1));
+  return {reqKwh,kwh,mwh,pcs,inv,newBill,mSave,ySave,pay:ySave>0?inv/ySave:Infinity,
+   s25:ySave*25-repl,repl,packs:Math.ceil(kwh/packKwh),cont,space:area+cont*n('spc')};
+ };
+ const F=mk(nonSolar*1.15,nonSolar/16*n('pk'),n('p1'));
+ const S=mk(d.D*1.15+d.B*0.5,d.D/7*n('pk'),n('p2'));
+
+ const card=(cls,title,r)=>`<div class="card ${cls}"><h2>${title}</h2><table>${rows([
+  ['Solar KW (total / naya)',`${num(totSolar)} / ${num(add)}`],
+  ['Battery kWh',`${num(r.kwh)} (${num(r.mwh,2)} MWh)`],
+  ['Battery packs (${0} kWh)'.replace('${0}',num(packKwh,1)),num(r.packs)],
+  ['PCS KW',num(r.pcs)],
+  ['Investment',inr(r.inv),'hl'],
+  ['Monthly Saving',inr(r.mSave)],
+  ['New Monthly Bill',inr(r.newBill)],
+  ['Payback',isFinite(r.pay)?r.pay.toFixed(1)+' saal':'—','hl'],
+  ['25 Yr Saving (net of Yr-12 battery)',inr(r.s25)],
+  ['Space Required (Sq.Ft)',num(r.space)],
+  ['Containers Required',num(r.cont)]])}</table></div>`;
+
+ // text graph
+ const hrs={A:6,B:3,C:8,D:7}, names={A:'A 00-06',B:'B 06-09',C:'C 09-17',D:'D 17-24'};
+ const kw={}; for(const z in d) kw[z]=d[z]/hrs[z];
+ const solKw=gen/8, mx=Math.max(...Object.values(kw),solKw,1);
+ const bar=v=>'█'.repeat(Math.max(0,Math.round(v/mx*36)));
+ let g='Avg load (kW) har zone me:\n';
+ for(const z of 'ABCD') g+=`${names[z]}  ${bar(kw[z]).padEnd(36)} ${num(kw[z])} kW  ${z==='C'?'☀ SOLAR HOURS':'🌙 NON-SOLAR'}\n`;
+ g+=`Solar gen (09-17)  ${bar(solKw).padEnd(36)} ${num(solKw)} kW avg\n\n`;
+ g+=`Solar Hours (Zone C) daily : ${num(d.C)} units\nNon-Solar daily (A+B+D)    : ${num(nonSolar)} units\nTotal daily                : ${num(daily)} units\nSolar generation / day     : ${num(gen)} units`;
+
+ // recommendation
+ const smartWins=S.pay<F.pay;
+ const rec=smartWins
+ ?`<div class="card rec"><h2>Recommendation: Smart Saving pehle</h2>
+  <p>Seth ji, Smart Saving ka payback <b>${S.pay.toFixed(1)} saal</b> hai aur Full Backup ka <b>${F.pay.toFixed(1)} saal</b>. Matlab kam paise me jaldi paisa wapas – pehle ${num(S.mwh,1)} MWh ka Smart system lagao, Zone D ka mehnga load battery se nikalo.</p>
+  <p>Baad me bill dekh ke battery expand karke Full Backup tak ja sakte ho – PCS aur container ki jagah pehle se plan rakhna.</p></div>`
+ :`<div class="card rec f"><h2>Recommendation: Full Backup ka case strong hai</h2>
+  <p>Seth ji, is data me Full Backup ka payback <b>${F.pay.toFixed(1)} saal</b> hai, Smart ka <b>${S.pay.toFixed(1)} saal</b>. Smart Saving pehle wala rule yahan nahi lag raha – Full Backup ka monthly saving itna zyada hai ki extra investment recover ho jaata hai.</p>
+  <p>Phir bhi ${num(F.mwh,1)} MWh ka investment ${inr(F.inv)} hai – site survey aur load-profile check ke baad hi final karo.</p></div>`;
+
+ $('out').innerHTML=`
+  <div class="two">${card('full','FULL BACKUP – '+num(F.mwh,1)+' MWh',F)}${card('smart smart','SMART SAVING – '+num(S.mwh,1)+' MWh',S)}</div>
+  <div class="card"><h2>Daily Load Graph – Solar Hours vs Non-Solar Hours</h2><pre>${g}</pre></div>
+  ${rec}
+  <div class="card"><h2>Detail calculation</h2><table>${rows([
+   ['Required Solar = (Daily + 15% loss) / 4.2',num(reqSolar)+' kW'],
+   ['Existing / Additional Solar',`${num(ex)} / ${num(add)} kW`],
+   ['Solar Area (additional × 80 Sq.Ft)',num(area)+' Sq.Ft'],
+   ['Battery pack',`${n('pv')}V × ${n('pa')}Ah = ${num(packKwh,2)} kWh`],
+   ['Full Backup battery = Non-Solar × 1.15',num(F.reqKwh)+' kWh'],
+   ['Smart battery = Zone D × 1.15 + Zone B × 0.5',num(S.reqKwh)+' kWh'],
+   ['Current Yearly Bill',inr(bill*12)],
+   ['Yearly Saving – Full / Smart',`${inr(F.ySave)} / ${inr(S.ySave)}`],
+   ['Battery replacement (Yr 12) – Full / Smart',`${inr(F.repl)} / ${inr(S.repl)}`],
+   ['Demand Capping saving / month',dcSave?inr(dcSave)+' (bill me included)':'Include nahi kiya']])}</table>
+   <p class="small" style="margin-top:10px">Investment me sirf <b>additional</b> solar count hua hai (existing already lagi hai). PCS = Full: Non-Solar daily ÷ 16 hrs × peak factor; Smart: Zone D daily ÷ 7 hrs × peak factor.</p></div>
+  <div class="card small"><b>Disclaimer:</b> Prices indicative ex-GST hain, final price site survey ke baad confirm hogi. New-bill % (15% / 32%) thumb-rule approximations hain – actual MSEDCL tariff order, TOD rebate/penalty aur demand charges ke hisaab se alag aa sakte hain.</div>`;
+}
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',calc));
+$('pdf').addEventListener('click',()=>{document.title='Solar_Battery_Report_MSEDCL';window.print()});
+calc();
+</script>
+</body>
+</html>
